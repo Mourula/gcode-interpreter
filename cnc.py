@@ -1,8 +1,17 @@
 import sys
 from machine_client import MachineClient
 
+"""
+Main for the G-Code interpreter.
+Author: Tiina Karhukivi
+"""
+
 
 def isCodeLine(line):
+    """ Check if line includes G-Code commands
+        Args:
+        line (str): Row from a file
+    """
 
     cleanLine = line.strip()
 
@@ -25,30 +34,62 @@ def isCodeLine(line):
     return True
 
 
-def codeInterpreter(code, client):
+def codeInterpreter(itemList, client):
+    """ Interpret G-Code Lines
+        Args:
+        itemList (list[str]): List of G-Codes from a row
+        client (MachineClient): Client for API calls
+    """
 
-    initial = code[0]
-    value = code[1:]
+    # Check special case: Are X, Y and Z all present in a row?
+    xFound = False
+    yFound = False
+    zFound = False
+    for item in itemList:
+        if item.find("X") != -1:
+            xFound = True
+        elif item.find("Y") != -1:
+            yFound = True
+        elif item.find("Z") != -1:
+            zFound = True
 
-    if initial == "X":
-        client.move_x(float(value))
-    elif initial == "Y":
-        client.move_y(float(value))
-    elif initial == "Z":
-        client.move_z(float(value))
-    elif initial == "F":
-        client.set_feed_rate(float(value))
-    elif initial == "S":
-        client.set_spindle_speed(int(value))
-    elif initial == "M":
-        if value == "8" or value == "08":
-            client.coolant_on()
-        elif value == "9" or value == "09":
-            client.coolant_off()
-        elif value == "30":
-            client.home()
-    elif initial == "T":
-        client.change_tool(value)
+    xyzFound = (xFound and yFound and zFound)
+
+    for item in itemList:
+        if (len(item) < 2):
+            continue
+
+        initial = item[0]
+        value = item[1:]
+
+        if initial == "X":
+            if xyzFound:
+                xVal = value
+            else:
+                client.move_x(float(value))
+        elif initial == "Y":
+            if xyzFound:
+                yVal = value
+            else:
+                client.move_y(float(value))
+        elif initial == "Z":
+            if xyzFound:
+                client.move(float(xVal), float(yVal), float(value))
+            else:
+                client.move_z(float(value))
+        elif initial == "F":
+            client.set_feed_rate(float(value))
+        elif initial == "S":
+            client.set_spindle_speed(int(value))
+        elif initial == "M":
+            if value == "8" or value == "08":
+                client.coolant_on()
+            elif value == "9" or value == "09":
+                client.coolant_off()
+            elif value == "30":
+                client.home()
+        elif initial == "T":
+            client.change_tool(value)
 
 
 def main(args):
@@ -79,12 +120,7 @@ def main(args):
         cleanRow = row.strip()
         itemList = cleanRow.split()
 
-        for item in itemList:
-
-            if (len(item) < 2):
-                continue
-
-            codeInterpreter(item, mc)
+        codeInterpreter(itemList, mc)
 
 
 if __name__ == '__main__':
