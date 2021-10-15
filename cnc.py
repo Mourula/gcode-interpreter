@@ -1,4 +1,5 @@
 import sys
+from machine_client import MachineClient
 
 
 def isCodeLine(line):
@@ -7,6 +8,10 @@ def isCodeLine(line):
 
     # Empty Row
     if len(cleanLine) == 0:
+        return False
+
+    # Begin/End Mark
+    if cleanLine[0] == "%":
         return False
 
     # Program Number
@@ -18,6 +23,32 @@ def isCodeLine(line):
         return False
 
     return True
+
+
+def codeInterpreter(code, client):
+
+    initial = code[0]
+    value = code[1:]
+
+    if initial == "X":
+        client.move_x(float(value))
+    elif initial == "Y":
+        client.move_y(float(value))
+    elif initial == "Z":
+        client.move_z(float(value))
+    elif initial == "F":
+        client.set_feed_rate(float(value))
+    elif initial == "S":
+        client.set_spindle_speed(int(value))
+    elif initial == "M":
+        if value == "8" or value == "08":
+            client.coolant_on()
+        elif value == "9" or value == "09":
+            client.coolant_off()
+        elif value == "30":
+            client.home()
+    elif initial == "T":
+        client.change_tool(value)
 
 
 def main(args):
@@ -42,21 +73,18 @@ def main(args):
         print("ERROR: Empty file.")
         return
 
-    if filerows.count("%") != 2:
-        print("ERROR: Begin/End marking error")
-        return
+    mc = MachineClient()
 
     for row in filerows:
-        cleanline = row.strip()
-        if(cleanline == "%"):
-            continue
+        cleanRow = row.strip()
+        itemList = cleanRow.split()
 
-        # -- Debug --
-        # items = cleanline.split()
-        # for item in items:
-        #    print(item)
+        for item in itemList:
 
-    print("-- Done --")
+            if (len(item) < 2):
+                continue
+
+            codeInterpreter(item, mc)
 
 
 if __name__ == '__main__':
