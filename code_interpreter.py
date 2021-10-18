@@ -32,6 +32,13 @@ def codeInterpreter(itemList, client):
         initial = item[0]
         value = item[1:]
 
+        if not value.isdigit():
+            try:
+                float(value)
+            except:
+                print("Error: Value is not digit in", item, "at", itemList)
+                return
+
         if initial == "X":
             if xyzFound:
                 xVal = value

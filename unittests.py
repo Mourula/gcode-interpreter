@@ -54,6 +54,14 @@ class TestInterpreterMethods(unittest.TestCase):
         thing.move_x.assert_called_once_with(0.2)
         thing.move_z.assert_called_once_with(-30.0)
 
+    def test_valueErrorInGcode(self):
+        thing = MachineClient()
+        thing.move_x = MagicMock()
+        itemList = ["N01", "Xx"]
+        codeInterpreter(itemList, thing)
+
+        self.assertFalse(thing.move_x.called)
+
 
 if __name__ == '__main__':
     unittest.main()
